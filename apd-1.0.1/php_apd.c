@@ -70,7 +70,7 @@ ZEND_DECLARE_MODULE_GLOBALS(apd);
 
 /* List of exported functions. */
 
-function_entry apd_functions[] = {
+zend_function_entry apd_functions[] = {
 	PHP_FE(override_function, NULL)
 	PHP_FE(rename_function, NULL)
 	PHP_FE(apd_set_pprof_trace, NULL)
@@ -321,7 +321,7 @@ char *apd_get_active_function_name(zend_op_array *op_array TSRMLS_DC)
 			}
 		} 
 		else {
-			switch (execd->opline->op2.u.constant.value.lval) {
+			switch (execd->opline->extended_value) {
 			case ZEND_EVAL:
 				funcname = estrdup("eval");
 				break;
@@ -964,7 +964,7 @@ ZEND_DLEXPORT void onStatement(zend_op_array *op_array)
 int apd_zend_startup(zend_extension *extension)
 {
 	TSRMLS_FETCH();
-	CG(extended_info) = 1;  /* XXX: this is ridiculous */
+	CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
 	return zend_startup_module(&apd_module_entry);
 }
 

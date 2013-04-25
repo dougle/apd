@@ -622,14 +622,19 @@ PHP_FUNCTION(override_function)
 	convert_to_string_ex(z_function_args);
 	convert_to_string_ex(z_function_code);
 
-	eval_code_length = sizeof("function " TEMP_OVRD_FUNC_NAME) 
+	temp_function_name_length = sizeof(TEMP_OVRD_FUNC_NAME ) + Z_STRLEN_PP(z_function_name);
+	temp_function_name = (char *) emalloc(temp_function_name_length);
+	sprintf(temp_function_name, "%s%s", TEMP_OVRD_FUNC_NAME, Z_STRVAL_PP(z_function_name));
+
+	eval_code_length = sizeof("function ")
+		+ temp_function_name_length
 		+ Z_STRLEN_PP(z_function_args)
 		+ 2 /* parentheses */
 		+ 2 /* curlies */
 		+ Z_STRLEN_PP(z_function_code);
 	eval_code = (char *) emalloc(eval_code_length);
-	sprintf(eval_code, "function " TEMP_OVRD_FUNC_NAME "(%s){%s}",
-			Z_STRVAL_PP(z_function_args), Z_STRVAL_PP(z_function_code));
+	sprintf(eval_code, "function %s(%s){%s}",
+			temp_function_name, Z_STRVAL_PP(z_function_args), Z_STRVAL_PP(z_function_code));
 	eval_name = zend_make_compiled_string_description("runtime-created override function" TSRMLS_CC);
 	retval = zend_eval_string(eval_code, NULL, eval_name TSRMLS_CC);
 	efree(eval_code);
@@ -638,8 +643,8 @@ PHP_FUNCTION(override_function)
 	if (retval == SUCCESS) {
 		zend_function *func;
 
-		if (zend_hash_find(EG(function_table), TEMP_OVRD_FUNC_NAME,
-						   sizeof(TEMP_OVRD_FUNC_NAME), (void **) &func) == FAILURE) 
+		if (zend_hash_find(EG(function_table), temp_function_name,
+						   temp_function_name_length, (void **) &func) == FAILURE) 
 			{
 				zend_error(E_ERROR, "%s() temporary function name not present in global function_table", get_active_function_name(TSRMLS_C));
 				RETURN_FALSE;
